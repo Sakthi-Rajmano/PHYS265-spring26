@@ -1,0 +1,367 @@
+<html>
+<head>
+<title>lab2.ipynb</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #bcbec4;}
+.s1 { color: #7a7e85;}
+.s2 { color: #cf8e6d;}
+.s3 { color: #bcbec4;}
+.s4 { color: #2aacb8;}
+.s5 { color: #6aab73;}
+.ls0 { height: 1px; border-width: 0; color: #43454a; background-color:#43454a}
+</style>
+</head>
+<body bgcolor="#191a1c">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+lab2.ipynb</font>
+</center></td></tr></table>
+<pre><span class="s0">#%% md 
+# Lab 2:   ATLAS Data Analysis 
+ 
+ <hr class="ls0">#%% md 
+Reminder:  **Lab 2** needs to be submitted in the `Lab2` folder of your personal `PHYS265-spring26` github repo, with the two `lab2.ipynb` and `lab2.html` files. 
+ 
+Lab days: April 6 and 8, during normal class hours.  Report is due on Sunday April 12, at 11.59pm on github, not ELMS. 
+ 
+Avoiding confusion, enter your name here:    Sakthi Rajmano Madhan Kumar 
+ <hr class="ls0">#%% md 
+## Introduction 
+------ 
+ 
+Imagine you are a physicist working on the ATLAS (**A** **T**oroidal **L**hc **A**pparatu**S**) experiment at CERN in Geneva. At ATLAS, high energy protons are smashed together, and the byproducts are studied. One of the most important measurements to be made is the mass of the $Z^0$ boson. 
+ 
+After you have done your investigations — which you are guided through below — you will 
+prepare a short report on your findings for grad students in your research group in the form of this notebook.  
+ 
+A table of relevant physical constants, from the 2024 edition of the Particle Data Group, is 
+below. Good luck! 
+ 
+ 
+ 
+| Quantity | Value | 
+|----------|-------| 
+|    Mass of Z Boson ($m_{Z^0}$) | $91.1880 \pm 0.0020$ GeV/$c^2$ | 
+|    Mass of W Boson ($m_W$) | $80.3692 \pm 0.0133$ GeV/$c^2$ | 
+|    Mass of Higgs Boson ($m_H$)   | $125.20 \pm 0.11$ GeV/$c^2$ | 
+|    Mass of Electron ($m_e$)   | $0.51099895000 \pm 0.00000000015$ MeV/$c^2$ | 
+|    Mass of Muon ($m_\mu$)   | $105.6583755 \pm 0.0000023$ MeV/$c^2$ | 
+|    Mass of Tau ($m_\tau$)   | $1776.93 \pm 0.09$ MeV/$c^2$ | 
+ <hr class="ls0">#%% md 
+At the Large Hadron Collider, at CERN, in Geneva, Switzerland, particle physicists collide beams of protons. 
+This process breaks the protons open, and more fundamental particles are formed, interact, and decay. 
+One of the most interesting fundamental particles to come out of proton-proton ($pp$) interactions is the $Z^0$-boson, which is the neutral carrier of the *weak* force, and is therefore responsible, along with the $W^{\pm}$-boson, for facilitating many nuclear interactions in the Universe. The photon, which you are more familiar with, is the carrier of the *electromagnetic force*. 
+ 
+The $Z^0$ is unstable and decays. About 10\% of the time, it decays into a pair of charged leptons.  
+This can be an electron ($e$) and and anti-electron (or positron, $e^+$). 
+It can also be a muon/anti-muon pair, or a tau/anti-tau pair. 
+Because it can do any of these, we substitute the generic letter $\ell$ for lepton,  
+and this interaction is known as $Z^0 \rightarrow \ell \bar{\ell}$,  
+where the ``bar&quot; over the $\ell$ indicates an anti-particle. 
+Because charge cannot be created or destroyed, they must have opposite  
+(or no\footnote{It is also possible for the $Z^0$ to decay into two photons, or $Z^0 \rightarrow \gamma \gamma$})  
+charge. And, because matter and energy cannot be created or destroyed,  
+if $Z^0$ particles are decaying to produce the leptons,  
+then the total energy stored in the two leptons must sum to (at least) the mass of the $Z^0$. 
+This means that if we can measure the energy of all double-lepton events in the detector,  
+we should see an *excess* or a *peak* at the mass of the $Z_0$. 
+ 
+ 
+ 
+ <hr class="ls0">#%% 
+</span><span class="s1">#show  start with your imports</span>
+<span class="s2">import </span><span class="s0">numpy </span><span class="s2">as </span><span class="s0">np</span>
+<span class="s2">import </span><span class="s0">matplotlib</span><span class="s3">.</span><span class="s0">pyplot </span><span class="s2">as </span><span class="s0">plt</span>
+<span class="s2">from </span><span class="s0">scipy</span><span class="s3">.</span><span class="s0">interpolate </span><span class="s2">import </span><span class="s0">CubicSpline</span>
+<span class="s2">from </span><span class="s0">scipy</span><span class="s3">.</span><span class="s0">optimize </span><span class="s2">import </span><span class="s0">curve_fit</span>
+<span class="s2">from </span><span class="s0">scipy </span><span class="s2">import </span><span class="s0">stats</span><hr class="ls0"><span class="s0">#%% 
+m_Z </span><span class="s3">= </span><span class="s4">91.1880</span>
+<span class="s0">m_Z_err </span><span class="s3">= </span><span class="s4">0.0020</span>
+
+<span class="s0">m_W </span><span class="s3">= </span><span class="s4">80.3692</span>
+<span class="s0">m_W_err </span><span class="s3">= </span><span class="s4">0.0133</span>
+
+<span class="s0">m_H </span><span class="s3">= </span><span class="s4">125.20</span>
+<span class="s0">m_H_err </span><span class="s3">= </span><span class="s4">0.11</span>
+
+<span class="s0">m_e </span><span class="s3">= </span><span class="s4">0.51099895000</span>
+<span class="s0">m_e_err </span><span class="s3">= </span><span class="s4">0.00000000015</span>
+
+<span class="s0">m_u </span><span class="s3">= </span><span class="s4">105.6583755</span>
+<span class="s0">m_u_err </span><span class="s3">= </span><span class="s4">0.0000023</span>
+
+<span class="s0">m_t </span><span class="s3">= </span><span class="s4">1776.93</span>
+<span class="s0">m_t_err </span><span class="s3">= </span><span class="s4">0.09</span><hr class="ls0"><span class="s0">#%% md 
+### Part 1: Invariant Mass Distribution 
+------ 
+ 
+In the ATLAS detector (which is one of four main experiments at the LHC),  
+it is reasonably straightforward to measure four properties of particles  
+that come out of the proton-proton interactions. The first is the total energy $E$.  
+The second is the transverse-momentum $p_T$, which describes the momentum  
+the particle has in the transverse direction. The third is the pseudorapidity $\eta$,  
+which describes the angle the particle makes with respect to the beamline.  
+If the particle continues straight along the beamline, then $\eta \rightarrow \infty$,  
+while if the particle is deflected out at $90^o$, it has $\eta =0$.  
+The fourth is the azimuthal angle $\phi$ about the beam.  
+That is, if you are staring down the barrel of the collider, a particle with $\eta, \phi = 0, 0$  
+emerges from the interaction point flying directly to the right.  
+Where a particle with $\eta, \phi = 0, \pi/2$ emerges from the top flying straight up. 
+ 
+Together, these values fully define the *four momentum* of the particle:  
+$p = (E, p_x, p_y, p_z)$ through the following mathematical relationships,  
+where $c$ (the speed of light) is treated in a strange fashion and set equal to 1  
+(which you will learn more about when you take a course that covers relativity and discuss &quot;natural units&quot;): 
+ 
+$$ 
+p_x = p_T \cos(\phi), \,\,\,\,\, p_y = p_T \sin(\phi), \,\,\,\, p_z = p_T \sinh(\eta)    \tag{1} 
+$$ 
+ 
+ 
+The difference between the three-momentum and the energy is the particle's invariant mass: 
+ 
+$$ 
+M = \sqrt{E^2 - (p_x^2 + p_y^2 + p_z^2)}     \tag{2} 
+$$ 
+ 
+If you have *two* particles, and you would like to know the total momentum of the system,  
+you have to sum the four momenta: $p_{tot} = p_1 + p_2$. 
+ 
+In the file `atlas_z_to_ll.csv`, you will find five-thousand real ATLAS data events. 
+These have been pre-selected from the  
+[2020 ATLAS open dataset](https://atlas.cern/Resources/Opendata) 
+so that the ``final states&quot; only contain the two leptons we are interested in. 
+The first two columns are the $p_T$ (in GeV) for the two leptons;  
+the next two columns are the $\eta$, the next two are $\phi$ (radians),  
+and the last two are the energy $E$ (in GeV)  
+**Note**: One nifty utility of natural units is that momentum and energy have the same units, which makes doing math with them much easier. 
+ 
+ 
+1. Load the data into python. 
+2. For each lepton pair, using the formulas in eq. (1) and eq. (2), calculate the mass of a hypothetical particle which decayed to produce that pair. 
+   * Hint: first, calculate the vector components, then calculate the summed four-momenta, then calculate the mass. 
+4. Make a histogram, with error bars, of your calculated invariant mass. You should approximate this as a Poisson counting experiment, so that the error on the number of events in the bin is equal to the square-root of the number of events in the bin. That is: $\sigma = \sqrt{N}$. Label the axes nicely, with units, etc. To make uniform grading possible, please do the histogram from 80 to 100 GeV with 41 bins. That is: `bins = np.linspace(80,100,41)`. 
+ <hr class="ls0">#%% 
+data </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">loadtxt</span><span class="s3">(</span><span class="s5">&quot;atlas_z_to_ll.csv&quot;</span><span class="s3">, </span><span class="s0">delimiter</span><span class="s3">=</span><span class="s5">&quot;,&quot;</span><span class="s3">, </span><span class="s0">skiprows</span><span class="s3">=</span><span class="s4">1</span><span class="s3">)</span>
+
+<span class="s0">pt1 </span><span class="s3">= </span><span class="s0">data</span><span class="s3">[:,</span><span class="s4">0</span><span class="s3">]</span>
+<span class="s0">pt2 </span><span class="s3">= </span><span class="s0">data</span><span class="s3">[:,</span><span class="s4">1</span><span class="s3">]</span>
+<span class="s0">eta1 </span><span class="s3">= </span><span class="s0">data</span><span class="s3">[:,</span><span class="s4">2</span><span class="s3">]</span>
+<span class="s0">eta2 </span><span class="s3">= </span><span class="s0">data</span><span class="s3">[:,</span><span class="s4">3</span><span class="s3">]</span>
+<span class="s0">phi1 </span><span class="s3">= </span><span class="s0">data</span><span class="s3">[:,</span><span class="s4">4</span><span class="s3">]</span>
+<span class="s0">phi2 </span><span class="s3">= </span><span class="s0">data</span><span class="s3">[:,</span><span class="s4">5</span><span class="s3">]</span>
+<span class="s0">E1 </span><span class="s3">= </span><span class="s0">data</span><span class="s3">[:,</span><span class="s4">6</span><span class="s3">]</span>
+<span class="s0">E2 </span><span class="s3">= </span><span class="s0">data</span><span class="s3">[:,</span><span class="s4">7</span><span class="s3">]</span>
+
+<span class="s0">px_1 </span><span class="s3">= </span><span class="s0">pt1</span><span class="s3">*</span><span class="s0">np</span><span class="s3">.</span><span class="s0">cos</span><span class="s3">(</span><span class="s0">phi1</span><span class="s3">)</span>
+<span class="s0">px_2 </span><span class="s3">= </span><span class="s0">pt2</span><span class="s3">*</span><span class="s0">np</span><span class="s3">.</span><span class="s0">cos</span><span class="s3">(</span><span class="s0">phi2</span><span class="s3">)</span>
+
+<span class="s0">py_1 </span><span class="s3">= </span><span class="s0">pt1</span><span class="s3">*</span><span class="s0">np</span><span class="s3">.</span><span class="s0">sin</span><span class="s3">(</span><span class="s0">phi1</span><span class="s3">)</span>
+<span class="s0">py_2 </span><span class="s3">= </span><span class="s0">pt2</span><span class="s3">*</span><span class="s0">np</span><span class="s3">.</span><span class="s0">sin</span><span class="s3">(</span><span class="s0">phi2</span><span class="s3">)</span>
+
+<span class="s0">pz_1 </span><span class="s3">= </span><span class="s0">pt1</span><span class="s3">*</span><span class="s0">np</span><span class="s3">.</span><span class="s0">sinh</span><span class="s3">(</span><span class="s0">eta1</span><span class="s3">)</span>
+<span class="s0">pz_2 </span><span class="s3">= </span><span class="s0">pt2</span><span class="s3">*</span><span class="s0">np</span><span class="s3">.</span><span class="s0">sinh</span><span class="s3">(</span><span class="s0">eta2</span><span class="s3">)</span>
+
+<span class="s0">E_tot </span><span class="s3">= </span><span class="s0">E1</span><span class="s3">+</span><span class="s0">E2</span>
+<span class="s0">p_x_total </span><span class="s3">= </span><span class="s0">px_1 </span><span class="s3">+ </span><span class="s0">px_2</span>
+<span class="s0">p_y_total </span><span class="s3">= </span><span class="s0">py_1 </span><span class="s3">+ </span><span class="s0">py_2</span>
+<span class="s0">p_z_total </span><span class="s3">= </span><span class="s0">pz_1 </span><span class="s3">+ </span><span class="s0">pz_2</span>
+
+<span class="s0">M </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">sqrt</span><span class="s3">(</span><span class="s0">E_tot</span><span class="s3">**</span><span class="s4">2 </span><span class="s3">- (</span><span class="s0">p_x_total</span><span class="s3">**</span><span class="s4">2 </span><span class="s3">+ </span><span class="s0">p_y_total</span><span class="s3">**</span><span class="s4">2 </span><span class="s3">+ </span><span class="s0">p_z_total</span><span class="s3">**</span><span class="s4">2</span><span class="s3">))</span>
+
+<hr class="ls0"><span class="s0">#%% 
+bins </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">linspace</span><span class="s3">(</span><span class="s4">80</span><span class="s3">,</span><span class="s4">100</span><span class="s3">,</span><span class="s4">41</span><span class="s3">)</span>
+
+<span class="s0">fig</span><span class="s3">, </span><span class="s0">ax1 </span><span class="s3">= </span><span class="s0">plt</span><span class="s3">.</span><span class="s0">subplots</span><span class="s3">()</span>
+
+<span class="s0">counts</span><span class="s3">, </span><span class="s0">bin_edges</span><span class="s3">, </span><span class="s0">patches </span><span class="s3">= </span><span class="s0">ax1</span><span class="s3">.</span><span class="s0">hist</span><span class="s3">(</span><span class="s0">M</span><span class="s3">, </span><span class="s0">bins</span><span class="s3">=</span><span class="s0">bins</span><span class="s3">)</span>
+<span class="s0">ax1</span><span class="s3">.</span><span class="s0">set_xlabel</span><span class="s3">(</span><span class="s5">&quot;Invariant Mass [GeV]&quot;</span><span class="s3">)</span>
+<span class="s0">ax1</span><span class="s3">.</span><span class="s0">set_ylabel</span><span class="s3">(</span><span class="s5">&quot;Counts&quot;</span><span class="s3">)</span>
+
+<span class="s0">bin_centers </span><span class="s3">= (</span><span class="s0">bin_edges</span><span class="s3">[:-</span><span class="s4">1</span><span class="s3">] + </span><span class="s0">bin_edges</span><span class="s3">[</span><span class="s4">1</span><span class="s3">:]) / </span><span class="s4">2</span>
+<span class="s0">errors </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">sqrt</span><span class="s3">(</span><span class="s0">counts</span><span class="s3">)</span>
+
+<span class="s0">ax1</span><span class="s3">.</span><span class="s0">errorbar</span><span class="s3">(</span><span class="s0">bin_centers</span><span class="s3">, </span><span class="s0">counts</span><span class="s3">, </span><span class="s0">yerr</span><span class="s3">=</span><span class="s0">errors</span><span class="s3">, </span><span class="s0">fmt</span><span class="s3">=</span><span class="s5">'o'</span><span class="s3">, </span><span class="s0">label </span><span class="s3">= </span><span class="s5">&quot;Error on Number of Events&quot;</span><span class="s3">)</span>
+<span class="s0">ax1</span><span class="s3">.</span><span class="s0">set_title</span><span class="s3">(</span><span class="s5">&quot;Invariant Mas Distribution&quot;</span><span class="s3">)</span>
+<span class="s0">ax1</span><span class="s3">.</span><span class="s0">legend</span><span class="s3">()</span>
+<span class="s0">fig</span><span class="s3">.</span><span class="s0">tight_layout</span><span class="s3">()</span><hr class="ls0"><span class="s0">#%% md 
+### Part 2: Breit-Wigner Fit 
+------ 
+ 
+You can show, using scattering theory, that the distribution of decays $\mathcal{D}$ at a reconstructed mass $m$ follows what is known as a Breit-Wigner (to a mathematician, Cauchy-Lorentz) peak. The distribution depends on true rest-mass of the $Z^0$, $m_0$, and on a &quot;width&quot; parameter $\Gamma$: 
+ 
+$$ 
+\mathcal{D}(m; m_0, \Gamma) = \frac{1}{\pi} \frac{\Gamma/2}{(m-m_0)^2 + (\Gamma/2)^2}    \tag{3} 
+$$ 
+ 
+In nature, the true width parameter $\Gamma_0$, is related to the lifetime of the particle by the Heisenberg uncertainty principle. 
+In a real detector, we can only measure the width subject to experimental uncertainties, and $\Gamma_{exp} &gt; \Gamma_0$. 
+ 
+ 
+1. Code up a function that returns the decay distribution as a function of $m$, $m_0$, and $\Gamma$. 
+2.  Fit your mass-distribution with the Breit-Wigner function. Fix the overall normalization to half the number of data points in the set. That is, you should fit $\frac{5000}{2} \times \mathcal{D}$. To make 
+ uniform grading possible, please do the fitting where the bin centers are $&gt;87$ to $&lt;93$ GeV *only*. But keep the same 41 bins from 80 to 100. If you were to make a numpy mask, it would be: `mask = (bin_centers &gt; 87) &amp; (bin_centers &lt; 93)`. 
+3. In a second, new plot, plot the data (with error bars), and overlay your fit. Label the axes well, add a nice legend, etc. In a sub-panel, plot the residuals between the data and the fit, and draw a hori 
+zontal line at zero to indicate perfect agreement (like we did in Lecture 13). Draw two vertical dotted lines to denote the fitting range. 
+4. Calculate the chi-square, reduced-chi-square, and p-value of your fit *in the fitting range*.  
+5. Using the covariance matrix, calculate the best fit mass $m_0$, and its uncertainty.  
+6. Annotate your plot with your best fit for the mass, its uncertainty, the chi-square/NDOF, and the p-value. Use only one decimal place for all numbers.  
+7. Label this plot clearly as **Figure 1**. 
+ 
+ 
+ <hr class="ls0">#%% 
+fig</span><span class="s3">, (</span><span class="s0">ax</span><span class="s3">, </span><span class="s0">ax2</span><span class="s3">) = </span><span class="s0">plt</span><span class="s3">.</span><span class="s0">subplots</span><span class="s3">(</span><span class="s4">2</span><span class="s3">,</span><span class="s4">1</span><span class="s3">, </span><span class="s0">figsize </span><span class="s3">= (</span><span class="s4">8</span><span class="s3">,</span><span class="s4">8</span><span class="s3">))</span>
+
+<span class="s2">def </span><span class="s0">breit_wigner</span><span class="s3">(</span><span class="s0">m</span><span class="s3">, </span><span class="s0">m0</span><span class="s3">, </span><span class="s0">gamma</span><span class="s3">):</span>
+    <span class="s2">return </span><span class="s3">(</span><span class="s4">1 </span><span class="s3">/ </span><span class="s0">np</span><span class="s3">.</span><span class="s0">pi</span><span class="s3">) * ((</span><span class="s0">gamma </span><span class="s3">/ </span><span class="s4">2</span><span class="s3">) / ((</span><span class="s0">m </span><span class="s3">- </span><span class="s0">m0</span><span class="s3">)**</span><span class="s4">2 </span><span class="s3">+ (</span><span class="s0">gamma </span><span class="s3">/ </span><span class="s4">2</span><span class="s3">)**</span><span class="s4">2</span><span class="s3">))</span>
+
+<span class="s2">def </span><span class="s0">breit_wigner_fit</span><span class="s3">(</span><span class="s0">m</span><span class="s3">, </span><span class="s0">m0</span><span class="s3">, </span><span class="s0">gamma</span><span class="s3">):</span>
+    <span class="s2">return </span><span class="s4">2500 </span><span class="s3">* </span><span class="s0">breit_wigner</span><span class="s3">(</span><span class="s0">m</span><span class="s3">, </span><span class="s0">m0</span><span class="s3">, </span><span class="s0">gamma</span><span class="s3">)</span>
+
+
+<span class="s0">counts</span><span class="s3">, </span><span class="s0">bin_edges</span><span class="s3">, </span><span class="s0">patches </span><span class="s3">= </span><span class="s0">ax</span><span class="s3">.</span><span class="s0">hist</span><span class="s3">(</span><span class="s0">M</span><span class="s3">, </span><span class="s0">bins</span><span class="s3">=</span><span class="s0">bins</span><span class="s3">)</span>
+<span class="s0">bin_centers </span><span class="s3">= (</span><span class="s0">bin_edges</span><span class="s3">[:-</span><span class="s4">1</span><span class="s3">] + </span><span class="s0">bin_edges</span><span class="s3">[</span><span class="s4">1</span><span class="s3">:]) / </span><span class="s4">2</span>
+<span class="s0">errors </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">sqrt</span><span class="s3">(</span><span class="s0">counts</span><span class="s3">)</span>
+
+<span class="s0">mask </span><span class="s3">= (</span><span class="s0">bin_centers </span><span class="s3">&gt; </span><span class="s4">87</span><span class="s3">) &amp; (</span><span class="s0">bin_centers </span><span class="s3">&lt; </span><span class="s4">93</span><span class="s3">)</span>
+
+<span class="s0">m_masked </span><span class="s3">= </span><span class="s0">bin_centers</span><span class="s3">[</span><span class="s0">mask</span><span class="s3">]</span>
+<span class="s0">y_masked </span><span class="s3">= </span><span class="s0">counts</span><span class="s3">[</span><span class="s0">mask</span><span class="s3">]</span>
+
+<span class="s0">params</span><span class="s3">, </span><span class="s0">covar </span><span class="s3">= </span><span class="s0">curve_fit</span><span class="s3">(</span><span class="s0">breit_wigner_fit</span><span class="s3">, </span><span class="s0">bin_centers</span><span class="s3">[</span><span class="s0">mask</span><span class="s3">], </span><span class="s0">counts</span><span class="s3">[</span><span class="s0">mask</span><span class="s3">], </span><span class="s0">sigma</span><span class="s3">=</span><span class="s0">errors</span><span class="s3">[</span><span class="s0">mask</span><span class="s3">], </span><span class="s0">absolute_sigma</span><span class="s3">=</span><span class="s2">True</span><span class="s3">)</span>
+
+<span class="s0">calculated_mass </span><span class="s3">= </span><span class="s0">params</span><span class="s3">[</span><span class="s4">0</span><span class="s3">]</span>
+<span class="s0">calculated_mass_err </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">sqrt</span><span class="s3">(</span><span class="s0">covar</span><span class="s3">[</span><span class="s4">0</span><span class="s3">][</span><span class="s4">0</span><span class="s3">])</span>
+
+
+<span class="s0">residuals </span><span class="s3">= </span><span class="s0">counts</span><span class="s3">[</span><span class="s0">mask</span><span class="s3">] - </span><span class="s0">breit_wigner_fit</span><span class="s3">(</span><span class="s0">bin_centers</span><span class="s3">[</span><span class="s0">mask</span><span class="s3">], *</span><span class="s0">params</span><span class="s3">)</span>
+<span class="s0">chi_sq </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">sum</span><span class="s3">((</span><span class="s0">residuals </span><span class="s3">/ </span><span class="s0">errors</span><span class="s3">[</span><span class="s0">mask</span><span class="s3">])**</span><span class="s4">2</span><span class="s3">)</span>
+
+<span class="s0">dof </span><span class="s3">= </span><span class="s0">len</span><span class="s3">(</span><span class="s0">bin_centers</span><span class="s3">[</span><span class="s0">mask</span><span class="s3">]) - </span><span class="s0">len</span><span class="s3">(</span><span class="s0">params</span><span class="s3">)</span>
+<span class="s0">reduced_chi_sq </span><span class="s3">= </span><span class="s0">chi_sq </span><span class="s3">/ </span><span class="s0">dof</span>
+<span class="s0">p_value </span><span class="s3">= </span><span class="s0">stats</span><span class="s3">.</span><span class="s0">chi2</span><span class="s3">.</span><span class="s0">sf</span><span class="s3">(</span><span class="s0">chi_sq</span><span class="s3">, </span><span class="s0">dof</span><span class="s3">)</span>
+
+
+<span class="s0">x_fit </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">linspace</span><span class="s3">(</span><span class="s4">80</span><span class="s3">, </span><span class="s4">100</span><span class="s3">, </span><span class="s4">200</span><span class="s3">)</span>
+<span class="s0">ax</span><span class="s3">.</span><span class="s0">plot</span><span class="s3">(</span><span class="s0">x_fit</span><span class="s3">, </span><span class="s0">breit_wigner_fit</span><span class="s3">(</span><span class="s0">x_fit</span><span class="s3">, </span><span class="s0">params</span><span class="s3">[</span><span class="s4">0</span><span class="s3">], </span><span class="s0">params</span><span class="s3">[</span><span class="s4">1</span><span class="s3">]), </span><span class="s0">label</span><span class="s3">=</span><span class="s5">&quot;Best Fit Graph&quot;</span><span class="s3">)</span>
+<span class="s0">ax</span><span class="s3">.</span><span class="s0">errorbar</span><span class="s3">(</span><span class="s0">bin_centers</span><span class="s3">, </span><span class="s0">counts</span><span class="s3">, </span><span class="s0">yerr</span><span class="s3">=</span><span class="s0">errors</span><span class="s3">, </span><span class="s0">fmt</span><span class="s3">=</span><span class="s5">'o'</span><span class="s3">, </span><span class="s0">label</span><span class="s3">=</span><span class="s5">&quot;Error on Number of Events&quot;</span><span class="s3">)</span>
+
+<span class="s0">ax</span><span class="s3">.</span><span class="s0">set_xlabel</span><span class="s3">(</span><span class="s5">&quot;Invariant Mass [GeV]&quot;</span><span class="s3">)</span>
+<span class="s0">ax</span><span class="s3">.</span><span class="s0">set_ylabel</span><span class="s3">(</span><span class="s5">&quot;Counts&quot;</span><span class="s3">)</span>
+<span class="s0">ax</span><span class="s3">.</span><span class="s0">set_title</span><span class="s3">(</span><span class="s5">&quot;Figure 1&quot;</span><span class="s3">)</span>
+
+<span class="s0">annotation </span><span class="s3">= (</span><span class="s5">f&quot;Mass: </span><span class="s2">{</span><span class="s0">calculated_mass</span><span class="s2">:</span><span class="s5">.1f</span><span class="s2">} </span><span class="s5">± </span><span class="s2">{</span><span class="s0">calculated_mass_err</span><span class="s2">:</span><span class="s5">.1f</span><span class="s2">} </span><span class="s5">GeV</span><span class="s2">\n</span><span class="s5">&quot;</span>
+              <span class="s5">rf&quot;$\chi^2$/NDOF: </span><span class="s2">{</span><span class="s0">reduced_chi_sq</span><span class="s2">:</span><span class="s5">.1f</span><span class="s2">}</span><span class="s5">\n&quot;</span>
+              <span class="s5">f&quot;p-value: </span><span class="s2">{</span><span class="s0">p_value</span><span class="s2">:</span><span class="s5">.1f</span><span class="s2">}</span><span class="s5">&quot;</span><span class="s3">)</span>
+
+<span class="s0">ax</span><span class="s3">.</span><span class="s0">legend</span><span class="s3">()</span>
+
+<span class="s0">frac_res </span><span class="s3">= (</span><span class="s0">counts </span><span class="s3">- </span><span class="s0">breit_wigner_fit</span><span class="s3">(</span><span class="s0">bin_centers</span><span class="s3">, </span><span class="s0">params</span><span class="s3">[</span><span class="s4">0</span><span class="s3">], </span><span class="s0">params</span><span class="s3">[</span><span class="s4">1</span><span class="s3">])) / </span><span class="s0">breit_wigner_fit</span><span class="s3">(</span><span class="s0">bin_centers</span><span class="s3">, </span><span class="s0">params</span><span class="s3">[</span><span class="s4">0</span><span class="s3">], </span><span class="s0">params</span><span class="s3">[</span><span class="s4">1</span><span class="s3">])</span>
+<span class="s0">frac_res_uncertainty </span><span class="s3">= </span><span class="s0">errors </span><span class="s3">/ </span><span class="s0">breit_wigner_fit</span><span class="s3">(</span><span class="s0">bin_centers</span><span class="s3">, </span><span class="s0">params</span><span class="s3">[</span><span class="s4">0</span><span class="s3">], </span><span class="s0">params</span><span class="s3">[</span><span class="s4">1</span><span class="s3">])</span>
+<span class="s0">zeros </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">zeros</span><span class="s3">(</span><span class="s0">len</span><span class="s3">(</span><span class="s0">bin_centers</span><span class="s3">))</span>
+
+<span class="s0">ax2</span><span class="s3">.</span><span class="s0">errorbar</span><span class="s3">(</span><span class="s0">bin_centers</span><span class="s3">, </span><span class="s0">frac_res</span><span class="s3">, </span><span class="s0">yerr</span><span class="s3">=</span><span class="s0">frac_res_uncertainty</span><span class="s3">, </span><span class="s0">fmt</span><span class="s3">=</span><span class="s5">&quot;o&quot;</span><span class="s3">, </span><span class="s0">color</span><span class="s3">=</span><span class="s5">&quot;red&quot;</span><span class="s3">, </span><span class="s0">label</span><span class="s3">=</span><span class="s5">&quot;Data&quot;</span><span class="s3">)</span>
+<span class="s0">ax2</span><span class="s3">.</span><span class="s0">plot</span><span class="s3">(</span><span class="s0">bin_centers</span><span class="s3">, </span><span class="s0">zeros</span><span class="s3">, </span><span class="s0">label</span><span class="s3">=</span><span class="s5">&quot;Theory&quot;</span><span class="s3">)</span>
+
+<span class="s0">ax2</span><span class="s3">.</span><span class="s0">axvline</span><span class="s3">(</span><span class="s0">x</span><span class="s3">=</span><span class="s4">87</span><span class="s3">, </span><span class="s0">color</span><span class="s3">=</span><span class="s5">'gray'</span><span class="s3">, </span><span class="s0">linestyle</span><span class="s3">=</span><span class="s5">':'</span><span class="s3">, </span><span class="s0">label</span><span class="s3">=</span><span class="s5">'Fitting Range'</span><span class="s3">)</span>
+<span class="s0">ax2</span><span class="s3">.</span><span class="s0">axvline</span><span class="s3">(</span><span class="s0">x</span><span class="s3">=</span><span class="s4">93</span><span class="s3">, </span><span class="s0">color</span><span class="s3">=</span><span class="s5">'gray'</span><span class="s3">, </span><span class="s0">linestyle</span><span class="s3">=</span><span class="s5">':'</span><span class="s3">)</span>
+
+<span class="s0">ax2</span><span class="s3">.</span><span class="s0">set_title</span><span class="s3">(</span><span class="s5">&quot;Fractional Residuals of Breit-Wigner Fit&quot;</span><span class="s3">)</span>
+<span class="s0">ax2</span><span class="s3">.</span><span class="s0">set_xlabel</span><span class="s3">(</span><span class="s5">&quot;Invariant Mass [GeV]&quot;</span><span class="s3">)</span>
+<span class="s0">ax2</span><span class="s3">.</span><span class="s0">set_ylabel</span><span class="s3">(</span><span class="s5">&quot;Fractional Residuals&quot;</span><span class="s3">)</span>
+
+
+<span class="s0">print</span><span class="s3">(</span><span class="s5">f&quot;Degrees of Freedom: </span><span class="s2">{</span><span class="s0">dof</span><span class="s2">}</span><span class="s5">&quot;</span><span class="s3">)</span>
+<span class="s0">print</span><span class="s3">(</span><span class="s5">f&quot;Chi-Square: </span><span class="s2">{</span><span class="s0">chi_sq</span><span class="s2">:</span><span class="s5">.2f</span><span class="s2">}</span><span class="s5">&quot;</span><span class="s3">)</span>
+<span class="s0">print</span><span class="s3">(</span><span class="s5">f&quot;Reduced Chi-Square: </span><span class="s2">{</span><span class="s0">reduced_chi_sq</span><span class="s2">:</span><span class="s5">.2f</span><span class="s2">}</span><span class="s5">&quot;</span><span class="s3">)</span>
+<span class="s0">print</span><span class="s3">(</span><span class="s5">f&quot;P-value: </span><span class="s2">{</span><span class="s0">p_value</span><span class="s2">:</span><span class="s5">.4f</span><span class="s2">}</span><span class="s5">&quot;</span><span class="s3">)</span>
+
+<span class="s0">fig</span><span class="s3">.</span><span class="s0">tight_layout</span><span class="s3">()</span>
+<span class="s0">plt</span><span class="s3">.</span><span class="s0">show</span><span class="s3">()</span>
+<hr class="ls0"><span class="s0">#%% md 
+## Part 3: 2D Parameter Scan 
+---- 
+ 
+As emphasized in class, this is a 2D fit, and you cannot determine $Z^0$ and $\Gamma_{exp}$ independently. In this part, you visualize the joint probability space. 
+ 
+ 
+1. Perform a 2D chi-square scan of the mass-width parameter space. To make grading easier, please scan in  mass from 89 to 91 GeV, and the width from 5 to 8, with 300 bins along each dimension.  
+2. Make a filled contour plot of the $\Delta \chi^2 = \chi^2 - \chi^2_{min}$. Clip the $\Delta \chi^2$ at 35 units to make the plot easier to see. Add a colorbar. Make the plot look nice, with appropriate labels. Note that this is a $\Delta \chi^2$ map. This means the minimum value on the z-axis should be zero. 
+3. Draw the $1\sigma$ and $3\sigma$ confidence levels onto the plot using a solid and dashed line, respectively.  Use the matplotlib `clabel` capability to label the levels appropriately. 
+   * Hint 1: If you need a refresher on how to do this, please check [this matplotlib page](https://matplotlib.org/stable/gallery/images_contours_and_fields/contour_label_demo.html) 
+   * Hint 2: You can look up the $\Delta \chi^2$ corresponding to the $1\sigma$ and $3\sigma$ levels online, or they can be seen in Lecture **11**. Pay close attention to how many degrees of freedom you have. 
+5. Draw a dot/cross at the best fit location from Part 2. 
+6. Label this plot clearly as **Figure 2**. 
+ 
+ 
+ <hr class="ls0">#%% 
+mass_grid </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">linspace</span><span class="s3">(</span><span class="s4">89</span><span class="s3">, </span><span class="s4">91</span><span class="s3">, </span><span class="s4">300</span><span class="s3">)</span>
+<span class="s0">width_grid </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">linspace</span><span class="s3">(</span><span class="s4">5</span><span class="s3">, </span><span class="s4">8</span><span class="s3">, </span><span class="s4">300</span><span class="s3">)</span>
+<span class="s0">M</span><span class="s3">, </span><span class="s0">W </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">meshgrid</span><span class="s3">(</span><span class="s0">mass_grid</span><span class="s3">, </span><span class="s0">width_grid</span><span class="s3">)</span>
+
+<span class="s0">chi2_ind </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">zeros</span><span class="s3">((</span><span class="s4">300</span><span class="s3">, </span><span class="s4">300</span><span class="s3">))</span>
+
+<span class="s2">for </span><span class="s0">i </span><span class="s2">in </span><span class="s0">range</span><span class="s3">(</span><span class="s4">300</span><span class="s3">):</span>
+    <span class="s2">for </span><span class="s0">j </span><span class="s2">in </span><span class="s0">range</span><span class="s3">(</span><span class="s4">300</span><span class="s3">):</span>
+        <span class="s0">m0_test </span><span class="s3">= </span><span class="s0">M</span><span class="s3">[</span><span class="s0">i</span><span class="s3">, </span><span class="s0">j</span><span class="s3">]</span>
+        <span class="s0">gamma_test </span><span class="s3">= </span><span class="s0">W</span><span class="s3">[</span><span class="s0">i</span><span class="s3">, </span><span class="s0">j</span><span class="s3">]</span>
+
+        <span class="s0">theory </span><span class="s3">= </span><span class="s0">breit_wigner_fit</span><span class="s3">(</span><span class="s0">bin_centers</span><span class="s3">[</span><span class="s0">mask</span><span class="s3">], </span><span class="s0">m0_test</span><span class="s3">, </span><span class="s0">gamma_test</span><span class="s3">)</span>
+
+        <span class="s0">chi2 </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">sum</span><span class="s3">(((</span><span class="s0">counts</span><span class="s3">[</span><span class="s0">mask</span><span class="s3">] - </span><span class="s0">theory</span><span class="s3">) / </span><span class="s0">errors</span><span class="s3">[</span><span class="s0">mask</span><span class="s3">])**</span><span class="s4">2</span><span class="s3">)</span>
+        <span class="s0">chi2_ind</span><span class="s3">[</span><span class="s0">i</span><span class="s3">, </span><span class="s0">j</span><span class="s3">] = </span><span class="s0">chi2</span>
+
+<span class="s0">chi2_min </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">min</span><span class="s3">(</span><span class="s0">chi2_ind</span><span class="s3">)</span>
+<span class="s0">delta_chi2 </span><span class="s3">= </span><span class="s0">chi2_ind </span><span class="s3">- </span><span class="s0">chi2_min</span>
+<span class="s0">delta_chi2_clipped </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">clip</span><span class="s3">(</span><span class="s0">delta_chi2</span><span class="s3">, </span><span class="s4">0</span><span class="s3">, </span><span class="s4">35</span><span class="s3">)</span>
+
+<span class="s0">fig</span><span class="s3">, </span><span class="s0">ax </span><span class="s3">= </span><span class="s0">plt</span><span class="s3">.</span><span class="s0">subplots</span><span class="s3">(</span><span class="s0">figsize</span><span class="s3">=(</span><span class="s4">8</span><span class="s3">, </span><span class="s4">6</span><span class="s3">))</span>
+<span class="s0">contour_filled </span><span class="s3">= </span><span class="s0">ax</span><span class="s3">.</span><span class="s0">contourf</span><span class="s3">(</span><span class="s0">M</span><span class="s3">, </span><span class="s0">W</span><span class="s3">, </span><span class="s0">delta_chi2_clipped</span><span class="s3">, </span><span class="s0">levels</span><span class="s3">=</span><span class="s4">50</span><span class="s3">, </span><span class="s0">cmap</span><span class="s3">=</span><span class="s5">'viridis'</span><span class="s3">)</span>
+<span class="s0">cbar </span><span class="s3">= </span><span class="s0">fig</span><span class="s3">.</span><span class="s0">colorbar</span><span class="s3">(</span><span class="s0">contour_filled</span><span class="s3">)</span>
+<span class="s0">cbar</span><span class="s3">.</span><span class="s0">set_label</span><span class="s3">(</span><span class="s5">'$\Delta\chi^2$'</span><span class="s3">)</span>
+
+<span class="s0">levels_sigma </span><span class="s3">= [</span><span class="s4">2.30</span><span class="s3">, </span><span class="s4">11.83</span><span class="s3">]</span>
+<span class="s0">contour_lines </span><span class="s3">= </span><span class="s0">ax</span><span class="s3">.</span><span class="s0">contour</span><span class="s3">(</span><span class="s0">M</span><span class="s3">, </span><span class="s0">W</span><span class="s3">, </span><span class="s0">delta_chi2</span><span class="s3">, </span><span class="s0">levels</span><span class="s3">=</span><span class="s0">levels_sigma</span><span class="s3">,</span>
+                           <span class="s0">colors</span><span class="s3">=</span><span class="s5">'white'</span><span class="s3">, </span><span class="s0">linestyles</span><span class="s3">=[</span><span class="s5">'solid'</span><span class="s3">, </span><span class="s5">'dashed'</span><span class="s3">])</span>
+
+<span class="s0">fmt </span><span class="s3">= {}</span>
+<span class="s0">strs </span><span class="s3">= [</span><span class="s5">'1$\sigma$'</span><span class="s3">, </span><span class="s5">'3$\sigma$'</span><span class="s3">]</span>
+<span class="s2">for </span><span class="s0">l</span><span class="s3">, </span><span class="s0">s </span><span class="s2">in </span><span class="s0">zip</span><span class="s3">(</span><span class="s0">contour_lines</span><span class="s3">.</span><span class="s0">levels</span><span class="s3">, </span><span class="s0">strs</span><span class="s3">):</span>
+    <span class="s0">fmt</span><span class="s3">[</span><span class="s0">l</span><span class="s3">] = </span><span class="s0">s</span>
+
+<span class="s0">ax</span><span class="s3">.</span><span class="s0">clabel</span><span class="s3">(</span><span class="s0">contour_lines</span><span class="s3">, </span><span class="s0">contour_lines</span><span class="s3">.</span><span class="s0">levels</span><span class="s3">, </span><span class="s0">fmt</span><span class="s3">=</span><span class="s0">fmt</span><span class="s3">, </span><span class="s0">inline</span><span class="s3">=</span><span class="s2">True</span><span class="s3">, </span><span class="s0">fontsize</span><span class="s3">=</span><span class="s4">12</span><span class="s3">)</span>
+
+<span class="s0">mass_pred </span><span class="s3">= </span><span class="s0">params</span><span class="s3">[</span><span class="s4">0</span><span class="s3">]</span>
+<span class="s0">width_pred </span><span class="s3">= </span><span class="s0">params</span><span class="s3">[</span><span class="s4">1</span><span class="s3">]</span>
+<span class="s0">ax</span><span class="s3">.</span><span class="s0">plot</span><span class="s3">(</span><span class="s0">mass_pred</span><span class="s3">, </span><span class="s0">width_pred</span><span class="s3">, </span><span class="s0">marker</span><span class="s3">=</span><span class="s5">'X'</span><span class="s3">, </span><span class="s0">color</span><span class="s3">=</span><span class="s5">'red'</span><span class="s3">, </span><span class="s0">markersize</span><span class="s3">=</span><span class="s4">10</span><span class="s3">, </span><span class="s0">label</span><span class="s3">=</span><span class="s5">'Best Fit'</span><span class="s3">)</span>
+
+<span class="s0">ax</span><span class="s3">.</span><span class="s0">set_xlabel</span><span class="s3">(</span><span class="s5">'Z0 Mass [GeV]'</span><span class="s3">)</span>
+<span class="s0">ax</span><span class="s3">.</span><span class="s0">set_ylabel</span><span class="s3">(</span><span class="s5">'Width $\Gamma$ [GeV]'</span><span class="s3">)</span>
+<span class="s0">ax</span><span class="s3">.</span><span class="s0">set_title</span><span class="s3">(</span><span class="s5">'Figure 2'</span><span class="s3">)</span>
+<span class="s0">ax</span><span class="s3">.</span><span class="s0">legend</span><span class="s3">()</span>
+
+<span class="s0">plt</span><span class="s3">.</span><span class="s0">show</span><span class="s3">()</span><hr class="ls0"><span class="s0">#%% md 
+## Part 4: Discussion and Future Work 
+---- 
+ 
+Add a brief comparison of your measured $Z^0$ relative to 
+the latest accepted values from the PDG. It should also include a summary of the approximations 
+you have made in doing your calculations, and future work necessary to make the calculations 
+more realistic. For example, your fit does not include any systematic uncertainties, or the energy 
+resolution of the ATLAS detector. 
+ 
+ 
+**Your Answer Goes in the markdown cell below:** 
+ <hr class="ls0">#%% md 
+By varying the mass parameter through the chi squared fit, I was able to measure the Z boson's mass as being $90.3 \pm 0.1 GeV$. The latest accepted value of the Z boson from the PDG is $91.1880 \pm 0.0020 $GeV/$c^2$. After calculating the z-score, we can observe that its value is much greater than one, indicating that the mass difference is close to $9 \sigma$ away, indicating that the predicted fit does not align well with the theory. My reduced chi square fit is exactly 1.00 which indicates a perfect fit. However, at the same time, our p value being $0.4418$ tells us that our Null Hypothesis that the calculated_mass not being a good fit to the theoretical mass is not invalidated. The problem with this is that my fit didn't include any systematic uncertainties or the energy resolution of the Atlas Detector, meaning we underestimated our uncertainties. This is the precise reason as to why the difference in my calculated mass and the theoretical mass was close to $9 \sigma$ away. In future work, to make sure that the calculations are more realistic, it will be important to include systematic uncertainties associated with measuring the parameters which help predict the mass of the Z boson, and in addition, the energy resolution of the ATLAS Detector will be important. In that case, the discrepancy between the reduced chi square fit being 1.00 and the mass difference being close to $9 \sigma$ will be resolved. <hr class="ls0">#%% 
+mass_difference </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">abs</span><span class="s3">(</span><span class="s0">m_Z</span><span class="s3">-</span><span class="s0">calculated_mass</span><span class="s3">)</span>
+<span class="s0">print</span><span class="s3">(</span><span class="s5">f&quot;Z-boson Mass Difference: </span><span class="s2">{</span><span class="s0">mass_difference</span><span class="s2">}</span><span class="s5">&quot;</span><span class="s3">)</span>
+<span class="s0">uncertainty_propagated </span><span class="s3">= </span><span class="s0">np</span><span class="s3">.</span><span class="s0">sqrt</span><span class="s3">((</span><span class="s0">calculated_mass_err</span><span class="s3">)**</span><span class="s4">2 </span><span class="s3">+ </span><span class="s0">m_Z_err</span><span class="s3">**</span><span class="s4">2</span><span class="s3">)</span>
+<span class="s0">print</span><span class="s3">(</span><span class="s5">f&quot;Propagated Uncertainty: </span><span class="s2">{</span><span class="s0">uncertainty_propagated</span><span class="s2">}</span><span class="s5">&quot;</span><span class="s3">)</span>
+<span class="s0">z_score </span><span class="s3">= </span><span class="s0">mass_difference</span><span class="s3">/</span><span class="s0">uncertainty_propagated</span>
+<span class="s0">print</span><span class="s3">(</span><span class="s5">f&quot;Z-score: </span><span class="s2">{</span><span class="s0">z_score</span><span class="s2">}</span><span class="s5">&quot;</span><span class="s3">)</span>
+<span class="s0">print</span><span class="s3">(</span><span class="s4">9</span><span class="s3">*</span><span class="s0">uncertainty_propagated</span><span class="s3">)</span></pre>
+</body>
+</html>
